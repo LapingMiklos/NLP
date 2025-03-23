@@ -12,6 +12,7 @@ static TRAIN_DATA: &'static str = "./data/train.csv";
 static STOP_WORDS: &'static str = "./data/stop_words.csv";
 static TEST_DATA: &'static str = "./data/test.csv";
 static PREDICTIONS: &'static str = "./data/predictions.csv";
+static LEXICON: &'static str = "./data/lex.csv";
 
 #[derive(Debug, Deserialize, Clone)]
 struct Review {
@@ -61,9 +62,9 @@ fn main() {
     let positive_bow = BagOfWords::from(positive_reviews.as_slice());
     let negative_bow = BagOfWords::from(negative_reviews.as_slice());
 
-    let dict = BinarySentimentDictionary::build(positive_bow, negative_bow, &stop_words, 0.5);
+    let dict = BinarySentimentDictionary::build(positive_bow, negative_bow, &stop_words);
 
-    dbg!(&dict);
+    let _ = dict.export(LEXICON);
 
     let correct_guesses = reviews
         .iter()
@@ -85,8 +86,17 @@ fn main() {
         .map(|r| (r.id, if dict.classify(&r.review) { 1 } else { -1 }))
         .collect::<Vec<_>>();
 
+    let mut poz = 0;
+    let mut neg = 0;
     let _ = writer.serialize(("ID", "decision"));
     for p in prediction {
+        if p.1 == 1 {
+            poz += 1;
+        } else {
+            neg += 1;
+        }
         let _ = writer.serialize(p);
     }
+
+    println!("Poz: {}, Neg: {}, Ratio: {}", poz, neg, poz as f32 / (poz + neg) as f32);
 }
