@@ -16,15 +16,13 @@ impl BagOfWords {
         self
     }
 
-    pub fn zipf_cut(mut self, min_count: u32, stop_words: &HashSet<String>) -> Self {
+    pub fn zipf_cut(&mut self, min_count: u32, stop_words: &HashSet<String>) {
         self.0
             .retain(|k, v| *v > min_count && k.len() > 1 && !stop_words.contains(k));
-
-        self
     }
 
-    pub fn build_dictionary(positive_bow: BagOfWords, negative_bow: BagOfWords, bias: f32) -> (HashSet<String>, HashSet<String>) {
-        todo!()
+    pub fn get(&self, word: &str) -> u32 {
+        self.0.get(word).unwrap_or(&0).clone()
     }
 }
 
@@ -36,11 +34,25 @@ impl Deref for BagOfWords {
     }
 }
 
-impl From<String> for BagOfWords {
-    fn from(value: String) -> Self {
-        let mut map = HashMap::new();
-        map.insert(value, 1);
-        BagOfWords(map)
+fn not_alpha(c: char) -> bool {
+    !c.is_alphabetic()
+}
+
+pub fn to_words(text: &str) -> Vec<String> {
+    text
+        .split(not_alpha)
+        .filter(|s | !s.is_empty())
+        .map(str::to_lowercase)
+        .collect()
+}
+
+impl From<&str> for BagOfWords {
+    fn from(value: &str) -> Self {
+        value
+            .split(not_alpha)
+            .filter(|s | !s.is_empty())
+            .map(str::to_lowercase)
+            .fold(BagOfWords::empty(), BagOfWords::add_word)
     }
 }
 
@@ -48,7 +60,7 @@ impl From<&[&str]> for BagOfWords {
     fn from(texts: &[&str]) -> Self {
         texts
             .iter()
-            .flat_map(|s| s.split(|c: char| !c.is_alphabetic() || c.is_whitespace()))
+            .flat_map(|s| s.split(not_alpha))
             .filter(|s| !s.is_empty())
             .map(str::to_lowercase)
             .fold(BagOfWords::empty(), BagOfWords::add_word)
