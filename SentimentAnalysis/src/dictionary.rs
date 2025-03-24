@@ -8,9 +8,18 @@ use crate::bag_of_words::{to_words, BagOfWords};
 pub struct BinarySentimentDictionary(HashMap<String, bool>);
 
 impl BinarySentimentDictionary {
-    pub fn build(mut positive_bow: BagOfWords, mut negative_bow: BagOfWords, stop_words: &HashSet<String>) -> Self {
-        positive_bow.zipf_cut(10, stop_words);
-        negative_bow.zipf_cut(5, stop_words);
+    pub fn build(mut positive_bow: BagOfWords, mut negative_bow: BagOfWords, stop_words: &HashSet<String>, min_word_freq: u32, acceptance_ratio_poz: f32, acceptance_ratio_neg: f32) -> Self {
+        positive_bow.remove_words(stop_words);
+        negative_bow.remove_words(stop_words);
+
+        let uncommon_words = BagOfWords::merge(&positive_bow, &negative_bow)
+            .0
+            .into_iter()
+            .filter_map(|(word, freq)| if freq < min_word_freq { Some(word) } else { None })
+            .collect::<HashSet<_>>();
+
+        positive_bow.remove_words(&uncommon_words);
+        negative_bow.remove_words(&uncommon_words);
 
         let words: HashSet<&String> = positive_bow.keys().chain(negative_bow.keys()).collect();
 
@@ -23,9 +32,9 @@ impl BinarySentimentDictionary {
 
                 let ratio = poz / (poz + neg);
 
-                if ratio > 0.9 {
+                if ratio > acceptance_ratio_poz {
                     Some((word.clone(), true))
-                } else if ratio < 0.1 {
+                } else if ratio < (1. - acceptance_ratio_neg) {
                     Some((word.clone(), false))
                 } else {
                     None

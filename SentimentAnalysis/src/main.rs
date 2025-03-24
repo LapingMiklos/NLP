@@ -62,7 +62,7 @@ fn main() {
     let positive_bow = BagOfWords::from(positive_reviews.as_slice());
     let negative_bow = BagOfWords::from(negative_reviews.as_slice());
 
-    let dict = BinarySentimentDictionary::build(positive_bow, negative_bow, &stop_words);
+    let dict = BinarySentimentDictionary::build(positive_bow, negative_bow, &stop_words, 10, 0.9, 0.8);
 
     let _ = dict.export(LEXICON);
 

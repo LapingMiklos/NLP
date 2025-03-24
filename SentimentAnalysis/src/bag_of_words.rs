@@ -3,22 +3,34 @@ use std::{
     ops::Deref,
 };
 
-#[derive(Debug)]
-pub struct BagOfWords(HashMap<String, u32>);
+#[derive(Debug, Clone)]
+pub struct BagOfWords(pub HashMap<String, u32>);
 
 impl BagOfWords {
     pub fn empty() -> Self {
         BagOfWords(HashMap::new())
     }
 
-    pub fn add_word(mut self, word: String) -> Self {
-        self.0.entry(word).and_modify(|v| *v += 1).or_insert(1);
+    pub fn add_word(self, word: String) -> Self {
+        self.add_words(word, 1)
+    }
+
+    pub fn add_words(mut self, word: String, amount: u32) -> Self {
+        self.0.entry(word).and_modify(|v| *v += amount).or_insert(amount);
         self
     }
 
-    pub fn zipf_cut(&mut self, min_count: u32, stop_words: &HashSet<String>) {
+    pub fn merge(&self, other: &Self) -> Self {
+        self
+            .clone()
+            .0
+            .into_iter()
+            .fold(other.clone(), |acc, (word, amount)| acc.add_words(word, amount))
+    }
+
+    pub fn remove_words(&mut self, words: &HashSet<String>) {
         self.0
-            .retain(|k, v| *v > min_count && k.len() > 1 && !stop_words.contains(k));
+            .retain(|k, _| k.len() > 1 && !words.contains(k));
     }
 
     pub fn get(&self, word: &str) -> u32 {
