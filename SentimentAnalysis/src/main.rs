@@ -39,11 +39,12 @@ fn main() {
     let mut reader =
         Reader::from_path(TRAIN_DATA).expect(&format!("Expexting train data: {}", TRAIN_DATA));
     let mut test_reader =
-        Reader::from_path(TRAIN_DATA).expect(&format!("Expexting test data: {}", TEST_DATA));
+        Reader::from_path(TEST_DATA).expect(&format!("Expexting test data: {}", TEST_DATA));
     let mut sw_reader =
         Reader::from_path(STOP_WORDS).expect(&format!("Expexting stop words: {}", STOP_WORDS));
 
     let reviews: Vec<Review> = reader.deserialize().filter_map(Result::ok).collect();
+
     let test_reviews: Vec<Review> = test_reader.deserialize().flat_map(Result::ok).collect();
 
     let stop_words: HashSet<String> = sw_reader.deserialize().filter_map(Result::ok).collect();
@@ -62,7 +63,7 @@ fn main() {
     let positive_bow = BagOfWords::from(positive_reviews.as_slice());
     let negative_bow = BagOfWords::from(negative_reviews.as_slice());
 
-    let dict = BinarySentimentDictionary::build(positive_bow, negative_bow, &stop_words, 10, 0.9, 0.8);
+    let dict = BinarySentimentDictionary::build(positive_bow, negative_bow, &stop_words, 10, 0.9, 0.9);
 
     let _ = dict.export(LEXICON);
 

@@ -8,9 +8,12 @@ use crate::bag_of_words::{to_words, BagOfWords};
 pub struct BinarySentimentDictionary(HashMap<String, bool>);
 
 impl BinarySentimentDictionary {
-    pub fn build(mut positive_bow: BagOfWords, mut negative_bow: BagOfWords, stop_words: &HashSet<String>, min_word_freq: u32, acceptance_ratio_poz: f32, acceptance_ratio_neg: f32) -> Self {
+    pub fn build(mut positive_bow: BagOfWords, mut negative_bow: BagOfWords, stop_words: &HashSet<String>, min_word_freq: u32, acceptance_ratio_poz: f64, acceptance_ratio_neg: f64) -> Self {
         positive_bow.remove_words(stop_words);
         negative_bow.remove_words(stop_words);
+
+        let positive_words = positive_bow.iter().map(|(_, v)| v).sum::<u32>() as f64;
+        let negative_words = negative_bow.iter().map(|(_, v)| v).sum::<u32>() as f64;
 
         let uncommon_words = BagOfWords::merge(&positive_bow, &negative_bow)
             .0
@@ -27,8 +30,8 @@ impl BinarySentimentDictionary {
             words
             .into_iter()
             .filter_map(|word| {
-                let poz = positive_bow.get(word) as f32;
-                let neg = negative_bow.get(word) as f32;
+                let poz = positive_bow.get(word) as f64 / positive_words;
+                let neg = negative_bow.get(word) as f64 / negative_words;
 
                 let ratio = poz / (poz + neg);
 
