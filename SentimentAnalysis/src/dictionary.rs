@@ -8,7 +8,14 @@ use crate::bag_of_words::{to_words, BagOfWords};
 pub struct BinarySentimentDictionary(HashMap<String, bool>);
 
 impl BinarySentimentDictionary {
-    pub fn build(mut positive_bow: BagOfWords, mut negative_bow: BagOfWords, stop_words: &HashSet<String>, min_word_freq: u32, acceptance_ratio_poz: f64, acceptance_ratio_neg: f64) -> Self {
+    pub fn build(
+        mut positive_bow: BagOfWords, 
+        mut negative_bow: BagOfWords, 
+        stop_words: &HashSet<String>,
+        min_word_freq: u32, 
+        acceptance_ratio_poz: f64, 
+        acceptance_ratio_neg: f64
+    ) -> Self {
         positive_bow.remove_words(stop_words);
         negative_bow.remove_words(stop_words);
 

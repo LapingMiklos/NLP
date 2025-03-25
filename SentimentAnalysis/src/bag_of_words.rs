@@ -30,9 +30,9 @@ impl BagOfWords {
 
     pub fn remove_words(&mut self, words: &HashSet<String>) {
         self.0
-            .retain(|k, _| k.len() > 1 && !words.contains(k));
+            .retain(|k, _| !words.contains(k));
     }
-
+    
     pub fn get(&self, word: &str) -> u32 {
         self.0.get(word).unwrap_or(&0).clone()
     }
@@ -56,16 +56,6 @@ pub fn to_words(text: &str) -> Vec<String> {
         .filter(|s | !s.is_empty())
         .map(str::to_lowercase)
         .collect()
-}
-
-impl From<&str> for BagOfWords {
-    fn from(value: &str) -> Self {
-        value
-            .split(not_alpha)
-            .filter(|s | !s.is_empty())
-            .map(str::to_lowercase)
-            .fold(BagOfWords::empty(), BagOfWords::add_word)
-    }
 }
 
 impl From<&[&str]> for BagOfWords {

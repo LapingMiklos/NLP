@@ -36,16 +36,16 @@ impl Review {
 }
 
 fn main() {
-    let mut reader =
+    let mut train_reader =
         Reader::from_path(TRAIN_DATA).expect(&format!("Expexting train data: {}", TRAIN_DATA));
     let mut test_reader =
         Reader::from_path(TEST_DATA).expect(&format!("Expexting test data: {}", TEST_DATA));
     let mut sw_reader =
         Reader::from_path(STOP_WORDS).expect(&format!("Expexting stop words: {}", STOP_WORDS));
 
-    let reviews: Vec<Review> = reader.deserialize().filter_map(Result::ok).collect();
+    let reviews: Vec<Review> = train_reader.deserialize().filter_map(Result::ok).collect();
 
-    let test_reviews: Vec<Review> = test_reader.deserialize().flat_map(Result::ok).collect();
+    let (reviews, test_reviews) = reviews.split_at(350);
 
     let stop_words: HashSet<String> = sw_reader.deserialize().filter_map(Result::ok).collect();
 
@@ -63,22 +63,27 @@ fn main() {
     let positive_bow = BagOfWords::from(positive_reviews.as_slice());
     let negative_bow = BagOfWords::from(negative_reviews.as_slice());
 
-    let dict = BinarySentimentDictionary::build(positive_bow, negative_bow, &stop_words, 10, 0.9, 0.9);
+    let dict =
+        BinarySentimentDictionary::build(positive_bow, negative_bow, &stop_words, 10, 0.8, 0.8);
 
     let _ = dict.export(LEXICON);
 
-    let correct_guesses = reviews
+    let correct_predictions = test_reviews
         .iter()
         .map(|r| (dict.classify(r.get_text()), r.is_positive()))
         .map(|(pred, label)| if pred == label { 1 } else { 0 })
         .sum::<u32>();
 
     println!(
-        "{}/{} = {}",
-        correct_guesses,
-        reviews.len(),
-        correct_guesses as f32 / reviews.len() as f32
+        "Accuraracy {}/{} = {}",
+        correct_predictions,
+        test_reviews.len(),
+        correct_predictions as f32 / test_reviews.len() as f32
     );
+
+
+    // Unlabeled Data
+    let test_reviews: Vec<Review> = test_reader.deserialize().flat_map(Result::ok).collect();
 
     let mut writer = Writer::from_path(PREDICTIONS)
         .expect(&format!("Could not open predictions file: {}", PREDICTIONS));
@@ -87,17 +92,8 @@ fn main() {
         .map(|r| (r.id, if dict.classify(&r.review) { 1 } else { -1 }))
         .collect::<Vec<_>>();
 
-    let mut poz = 0;
-    let mut neg = 0;
     let _ = writer.serialize(("ID", "decision"));
     for p in prediction {
-        if p.1 == 1 {
-            poz += 1;
-        } else {
-            neg += 1;
-        }
         let _ = writer.serialize(p);
     }
-
-    println!("Poz: {}, Neg: {}, Ratio: {}", poz, neg, poz as f32 / (poz + neg) as f32);
 }
